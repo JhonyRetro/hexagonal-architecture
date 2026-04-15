@@ -1,9 +1,9 @@
 package com.breadhardit.logistics.item;
 
+import com.breadhardit.logistics.item.infrastructure.persistence.mongo.repository.ItemMongoRepository;
 import com.breadhardit.logistics.item.infrastructure.rest.dto.request.PatchItemRequestDTO;
 import com.breadhardit.logistics.item.infrastructure.rest.dto.request.PostItemRequestDTO;
-import com.breadhardit.logistics.item.infrastructure.persistence.jpa.repository.ItemJpaRepository;
-import com.breadhardit.logistics.item.infrastructure.persistence.jpa.repository.entity.ItemEntity;
+import com.breadhardit.logistics.item.infrastructure.persistence.entity.ItemEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.Matchers;
@@ -37,7 +37,7 @@ class ItemApplicationTests {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private ItemJpaRepository itemJpaRepository;
+    private ItemMongoRepository itemMongoRepository;
 
 
     @BeforeAll
@@ -51,12 +51,11 @@ class ItemApplicationTests {
     @BeforeEach
     public void beforeEach() {
         log.info("Deleting items in database");
-        itemJpaRepository.deleteAll();
+        itemMongoRepository.deleteAll();
         List<ItemEntity> data = EASY_RANDOM.objects(ItemEntity.class, 20).toList();
-        itemJpaRepository.saveAll(data.stream().peek(e -> e.setId(UUID.randomUUID().toString())).toList());
+        itemMongoRepository.saveAll(data.stream().peek(e -> e.setId(UUID.randomUUID().toString())).toList());
     }
 
-    ;
 
     @Test
     void getAllItems_shouldReturn200() throws Exception {
@@ -66,7 +65,7 @@ class ItemApplicationTests {
 
     @Test
     void getAllItems_shouldReturn204NoContent() throws Exception {
-        itemJpaRepository.deleteAll();
+        itemMongoRepository.deleteAll();
         mockMvc.perform(MockMvcRequestBuilders.get("/items"))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
     }
@@ -79,7 +78,7 @@ class ItemApplicationTests {
 
     @Test
     void getItemById_shouldReturn200IfFound() throws Exception {
-        String id = itemJpaRepository.findAll().getFirst().getId();
+        String id = itemMongoRepository.findAll().getFirst().getId();
         mockMvc.perform(MockMvcRequestBuilders.get("/items/".concat(id)))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
@@ -111,7 +110,7 @@ class ItemApplicationTests {
 
     @Test
     void createItem_shouldReturn409IfDuplicated() throws Exception {
-        String existingItemName = itemJpaRepository.findAll().getFirst().getName();
+        String existingItemName = itemMongoRepository.findAll().getFirst().getName();
 
         PostItemRequestDTO dto = PostItemRequestDTO.builder()
                 .name(existingItemName)
@@ -125,7 +124,7 @@ class ItemApplicationTests {
 
     @Test
     void deleteItem_shouldReturn204IfSuccessful() throws Exception {
-        String id = itemJpaRepository.findAll().stream().findFirst().get().getId();
+        String id = itemMongoRepository.findAll().stream().findFirst().get().getId();
         mockMvc.perform(MockMvcRequestBuilders.delete("/items/".concat(id)))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
     }
@@ -144,7 +143,7 @@ class ItemApplicationTests {
 
     @Test
     void patchItem_shouldReturn204IfSuccessful() throws Exception {
-        String id = itemJpaRepository.findAll().stream().findFirst().get().getId();
+        String id = itemMongoRepository.findAll().stream().findFirst().get().getId();
         PatchItemRequestDTO dto = PatchItemRequestDTO.builder()
                 .name("New name")
                 .build();
@@ -168,7 +167,7 @@ class ItemApplicationTests {
 
     @Test
     void patchItem_shouldReturn422IfInvalidInput() throws Exception {
-        String id = itemJpaRepository.findAll().stream().findFirst().get().getId();
+        String id = itemMongoRepository.findAll().stream().findFirst().get().getId();
         PatchItemRequestDTO dto = PatchItemRequestDTO.builder()
                 .name("")
                 .build();
